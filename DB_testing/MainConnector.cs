@@ -1,35 +1,45 @@
-﻿using DB_testing.Configurations;
-using Microsoft.Data.SqlClient;
+﻿using System;
 using System.Data;
+using Microsoft.Data.SqlClient;
 
 namespace DB_testing
 {
     public class MainConnector
     {
+        private readonly string connectionString;
         private SqlConnection connection;
 
-        public async Task<bool> ConnectAsync()
+        public MainConnector(string connectionString)
         {
-            bool result;
-            try
-            {
-                connection = new SqlConnection(ConnectionString.MsSqlConnection);
-                await connection.OpenAsync();
-                result = true;
-            }
-            catch
-            {
-                result = false;
-            }
-
-            return result;
+            this.connectionString = connectionString;
+            connection = new SqlConnection(connectionString);
         }
 
-        public async Task DisconnectAsync()  // Изменили на Task
+        public SqlConnection GetConnection()
         {
             if (connection.State == ConnectionState.Open)
             {
-                await connection.CloseAsync();
+                return connection;
+            }
+            else
+            {
+                throw new Exception("Подключение уже закрыто!");
+            }
+        }
+
+        public void Connect()
+        {
+            if (connection.State != ConnectionState.Open)
+            {
+                connection.Open();
+            }
+        }
+
+        public void Disconnect()
+        {
+            if (connection.State == ConnectionState.Open)
+            {
+                connection.Close();
             }
         }
     }
