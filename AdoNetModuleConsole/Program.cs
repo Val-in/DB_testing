@@ -1,41 +1,53 @@
 ﻿using DB_testing;
+using DB_testing.Configurations;
 using System.Data;
 
 namespace AdoNetModuleConsole
 {
     public class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            string connectionString = "your_connection_string_here"; // Замените на вашу строку подключения
-            var connector = new MainConnector(connectionString);
+            var connector = new MainConnector(ConnectionString.MsSqlConnection);
 
-            try
+            // Подключаемся к базе данных
+            await connector.ConnectAsync();
+
+            var data = new DataTable();
+
+            // Проверяем результат подключения через свойство connector.Result
+            if (connector.Result)
             {
-                connector.Connect();
                 Console.WriteLine("Подключено успешно!");
 
                 var db = new DbExecutor(connector);
-                var tableName = "NetworkUser";
 
-                Console.WriteLine("Получаем данные таблицы " + tableName);
-                var data = db.SelectAll(tableName);
+                var tablename = "NetworkUser";
 
-                Console.WriteLine("Количество строк в " + tableName + ": " + data.Rows.Count);
+                Console.WriteLine("Получаем данные таблицы " + tablename);
 
-                // Дополнительный вывод данных (необязательно)
-                foreach (DataRow row in data.Rows)
+                data = db.SelectAll(tablename);
+
+                Console.WriteLine("Количество строк в " + tablename + ": " + data.Rows.Count);
+
+                Console.WriteLine("Отключаем БД!");
+                await connector.DisconnectAsync();
+
+                // Попробуем подключиться снова
+                await connector.ConnectAsync();
+
+                if (connector.Result)
                 {
-                    Console.WriteLine($"ID: {row["Id"]}, Name: {row["Name"]}, Login: {row["Login"]}");
+                    Console.WriteLine("Количество строк в " + tablename + ": " + data.Rows.Count);
                 }
 
-                connector.Disconnect();
-                Console.WriteLine("Отключено от БД!");
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine("Ошибка: " + ex.Message);
+                Console.WriteLine("Ошибка подключения!");
             }
+
+            Console.ReadKey();
         }
     }
 }
